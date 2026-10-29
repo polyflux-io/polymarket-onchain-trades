@@ -47,6 +47,7 @@ configs:
 
 [![License: CC BY 4.0](https://img.shields.io/badge/License-CC_BY_4.0-lightgrey.svg)](https://creativecommons.org/licenses/by/4.0/)
 [![DOI](https://img.shields.io/badge/DOI-10.57967%2Fhf%2F11293-blue.svg)](https://doi.org/10.57967/hf/11293)
+[![Code](https://img.shields.io/badge/code-polyflux--io%2Fpolymarket--onchain--trades-black.svg?logo=github)](https://github.com/polyflux-io/polymarket-onchain-trades)
 
 **TL;DR.** Every Polymarket fill, split, merge, redemption and settlement on Polygon from the
 first CLOB trade (2022-11-21) to 2026-10-26: 4.9 billion rows, 1.32 billion economic fills,
@@ -260,6 +261,11 @@ One row per market (condition): `condition_id`, `question`, `slug`, `event_slug`
      aggregate events included; from 2026-06-25 the per-maker fill logs remain identical and
      the only difference is the aggregate events this dataset no longer carries.
 
+**Reproduce it yourself.** The extractor, parsers, per-day driver, release build, market
+lookups and both cross-check scripts are open source under MIT at
+[github.com/polyflux-io/polymarket-onchain-trades](https://github.com/polyflux-io/polymarket-onchain-trades).
+With a Polygon full node, one command rebuilds any day of this dataset.
+
 Era note: Polymarket migrated collateral and exchange contracts in 2026 (USDC.e to pUSD,
 Neg Risk Adapter v1 to v2). The extraction is era-aware; trades across the migration are in
 one consistent schema.
@@ -340,6 +346,8 @@ discussion.
 
 - **v1.0 (2026-10-28):** initial release. 1,436 daily files 2022-11-21 to 2026-10-26, `assets`
   and `markets` tables, DOI 10.57967/hf/11293.
+- **2026-10-29:** pipeline and verification scripts published at
+  github.com/polyflux-io/polymarket-onchain-trades (MIT).
 - **2026-10-29:** card rewritten after cross-checks against Envio and SII datasets: exact row
   semantics (aggregate taker-order rows carried only through 2026-06-24), split/merge
   attribution to exchange contracts, comparison with other public datasets.
