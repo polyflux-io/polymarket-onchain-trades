@@ -1,0 +1,9 @@
+# extraction
+polars>=1.0
+requests>=2.31
+eth-utils>=5.0
+eth-hash[pycryptodome]>=0.7
+# release / verification
+duckdb>=1.1
+pyarrow>=15
+huggingface_hub>=1.0
