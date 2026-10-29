@@ -41,6 +41,14 @@ configs:
   data_files:
   - split: train
     path: markets.parquet
+- config_name: markets_full
+  data_files:
+  - split: train
+    path: markets_full.parquet
+- config_name: events
+  data_files:
+  - split: train
+    path: events.parquet
 ---
 
 # Polymarket on-chain trades, 2022-2026
@@ -52,7 +60,9 @@ configs:
 **TL;DR.** Every Polymarket fill, split, merge, redemption and settlement on Polygon from the
 first CLOB trade (2022-11-21) to 2026-10-26: 4.9 billion rows, 1.32 billion economic fills,
 $46.7 billion traded, 3.27 million wallets, 10.1 million outcome tokens, in 1,436 daily parquet
-files plus `assets` and `markets` tables that turn token ids into questions and outcomes.
+files plus `assets` and `markets` tables that turn token ids into questions and outcomes, and a
+full Gamma catalog snapshot (`events`, `markets_full`: 2.3 million markets with their complete
+description and resolution-rules text, tags, UMA fields and fee rules).
 Extracted from our own Polygon full node; per-day fill counts verified identical to two
 independent indexers. The only public dataset with the conditional-token lifecycle through the
 V2 era. Count a month of fills without downloading anything:
@@ -98,6 +108,10 @@ There are several good public Polymarket datasets on the Hub (compared in detail
   separately built index on every day of March 2026, and matching Dune on sampled days.
 - **Built from our own full node**, not a third-party RPC or indexer, with per-day receipt
   parity checks before a day was accepted.
+- **The full market text.** `markets_full` carries the complete description and resolution
+  rules for 2.3 million markets (the largest such snapshot on the Hub), joined to the trades by
+  `condition_id` and token id, so question, rules, outcome and price path sit in one place.
+  This is what LLM-forecasting and resolution studies otherwise scrape piecemeal.
 
 What it deliberately does not try to be: a cleaned analysis layer (no relayer filtering, no
 YES-normalized prices, no PnL panels) and not an order-book dataset. See "Related datasets"
@@ -233,6 +247,37 @@ One row per outcome token seen in the data: `asset_id`, `condition_id`, `outcome
 `question`, `slug`, `first_seen`, `last_seen`, `n_trades`, `source` (`gamma` = resolved
 from Polymarket's Gamma API; `cache` = from an older cache, question and slug only).
 
+### `events` and `markets_full` configs (Gamma catalog snapshot, 2026-08-08)
+
+A full crawl of Polymarket's Gamma API taken on 2026-08-08: **801,806 events** and
+**2,308,286 markets** (2,306,906 distinct conditions), every market that existed by that
+date, closed or open. 2.31 million carry a description (the resolution rules text),
+2.15 million were resolved at snapshot time.
+
+`events.parquet` (67 MB, one row per event): `event_id`, `slug`, `title`, `description`,
+`tags[]`, `ticker`, start/end/created/updated dates, `closed`, `active`, `archived`,
+`neg_risk`, `resolution_source`, `n_markets`, `volume`, `liquidity`, `open_interest`,
+`comment_count`.
+
+`markets_full.parquet` (525 MB, one row per market): `market_id`, `condition_id`,
+`question_id`, `slug`, `question`, **`description`** (full rules text), `outcomes[]`,
+`outcome_prices[]` (final prices at snapshot; 1/0 when resolved), `clob_token_ids[]`,
+`group_item_title`, event id/slug/title, `tags[]`, `resolution_source`, `resolved_by`,
+`uma_resolution_status`, `uma_bond`, `uma_reward`, `uma_end_date`, dates, `closed_time`,
+status flags, `fee_type`, maker/taker base fees, `order_min_size`,
+`order_price_min_tick_size`, `volume`, `volume_clob`, `liquidity`, `last_trade_price`,
+`best_ask`, `spread`.
+
+Joins: `markets_full.condition_id` = `condition_id` on split/merge/redeem/settlement rows and
+on `assets`; `unnest(clob_token_ids)` = `asset_id` on trade rows. Coverage: 4.4 million of
+the 10.1 million tokens in the trade data (44% by count; the uncovered ones were created
+after 2026-08-08 and are almost all templated 5-minute crypto markets, which `markets`
+covers by id). Top tags by event count: Crypto Prices, Up or Down, 5M, 15M, Sports,
+Recurring.
+
+Note: questions, titles and descriptions are text published by Polymarket through its public
+API. The CC BY licence covers this compilation and its structure, not that text.
+
 ### `markets` config (`markets.parquet`)
 
 One row per market (condition): `condition_id`, `question`, `slug`, `event_slug`,
@@ -335,8 +380,10 @@ Where to go for what this dataset lacks:
 - **User-level PnL and behavioural features:** `vgregoire/polymarket-users`.
 - **Order-book depth:** `Joseph3222/polymarket-orderbook`; the crypto up/down niche has
   several (`aliplayer1/polymarket-crypto-updown` and others).
-- **Market metadata and price candles from the API:** `od2961/polymarket-full-market-dataset`,
-  `cognocracy-agent/polymarket-gamma-dataset`.
+- **Price candles from the API:** `od2961/polymarket-full-market-dataset` (1.79 million
+  markets as of 2026-07-12, with daily OHLC). For market text and metadata alone, this
+  dataset's `markets_full` (2.31 million markets, 2026-08-08) is the larger snapshot;
+  `cognocracy-agent/polymarket-gamma-dataset` has 1.01 million as of May 2026.
 
 Where they overlap with this dataset, the raw fill counts should agree; they did exactly for
 the one we tested (Envio, March 2026). If you find a discrepancy with any of them, open a
@@ -344,6 +391,8 @@ discussion.
 
 ## Changelog
 
+- **v1.1 (2026-10-30):** added the Gamma catalog snapshot of 2026-08-08 as `events`
+  (801,806 rows) and `markets_full` (2,308,286 rows, full description and resolution text).
 - **v1.0 (2026-10-28):** initial release. 1,436 daily files 2022-11-21 to 2026-10-26, `assets`
   and `markets` tables, DOI 10.57967/hf/11293.
 - **2026-10-29:** pipeline and verification scripts published at

@@ -23,6 +23,7 @@ extract/
 release/
   build_release.py              filter + repartition the archive into data/year=YYYY/day_*.parquet (zstd)
   build_markets3.py             assets.parquet + markets.parquet via Polymarket's Gamma API, resumable
+  build_catalog.py              Gamma catalog JSONL (events with nested markets) -> events.parquet + markets_full.parquet
   count_logs.py                 OrderFilled log / fill / volume totals for the card
   crosscheck_envio.py           per-day fill counts vs moose-code/polymarket-onchain-v1 (March 2026)
   crosscheck_sii.py             per-day fill counts vs SII-WANGZJ/Polymarket_data (Jan + Jun 2026)
@@ -63,6 +64,7 @@ those rows. The published dataset does not include them.
 export ARCHIVE_DIR=archive RELEASE_DIR=release_out
 python release/build_release.py                 # trades/split/merge/redeem/settlement only, zstd, daily, hive by year
 python release/build_markets3.py                # assets.parquet + markets.parquet (Gamma lookups, ~10M tokens, resumable)
+CATALOG_JSONL=catalog.jsonl python release/build_catalog.py   # optional: full Gamma catalog -> events/markets_full
 python release/count_logs.py                    # totals used in the card
 python release/fill_card.py                     # docs/DATASET_CARD.md -> release_out/README.md with real numbers
 HF_TOKEN=... HF_REPO=you/your-dataset python release/upload_data.py
